@@ -1,0 +1,1417 @@
+﻿<!doctype html>
+<html lang="pt-BR" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prontuário Eletrônico - Sistema de Prontuário</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6C3FA0',
+            primaryDark: '#4A2B6E',
+            primaryLight: '#9B6DD7',
+            accent: '#8B5CF6',
+            surface: '#F8F6FC',
+            cardBg: '#FFFFFF',
+            textMain: '#2D1B4E',
+            textSub: '#6B5B7E'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { font-family: 'Plus Jakarta Sans', sans-serif; }
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    .slide { display: none; opacity: 0; transform: translateX(30px); transition: all 0.4s ease; padding: 16px 8px; }
+    .slide.active { display: flex; opacity: 1; transform: translateX(0); }
+    .sidebar-item { transition: all 0.2s; }
+    .sidebar-item:hover, .sidebar-item.active { background: rgba(255,255,255,0.15); border-radius: 8px; }
+    .mock-card { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(108,63,160,0.08); border: 1px solid #F0ECF5; }
+    .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: #D4C5E8; transition: all 0.3s; cursor: pointer; }
+    .nav-dot.active { background: #6C3FA0; width: 24px; border-radius: 4px; }
+    .screen-mock { background: #F8F6FC; border-radius: 12px; border: 1px solid #E8E0F0; overflow: hidden; }
+    .screen-header { background: linear-gradient(135deg, #6C3FA0, #8B5CF6); padding: 12px 16px; }
+    .mini-sidebar { background: #4A2B6E; width: 48px; min-height: 100%; }
+    .pulse-dot { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.5; } }
+    .fade-up { animation: fadeUp 0.5s ease forwards; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #D4C5E8; border-radius: 4px; }
+    /* Media Queries para Celular - Mobile First */
+    @media (max-width: 768px) {
+      html, body { height: auto; overflow-y: auto; }
+      #app { height: auto; flex-direction: column; }
+      #slidesContainer { height: auto; overflow: visible; }
+      .slide { 
+        height: auto !important; 
+        min-height: auto !important;
+        display: flex !important;
+        padding: 20px 12px 100px 12px !important; 
+      }
+      h1 { font-size: 32px !important; }
+      h2 { font-size: 24px !important; }
+      h4 { font-size: 14px !important; }
+      p { font-size: 14px !important; }
+      .screen-mock { height: auto !important; max-height: 450px !important; }
+      .mini-sidebar { width: 0 !important; display: none !important; }
+      .grid { gap: 12px !important; }
+      /* Converte grids para 1 coluna em celular */
+      .grid-cols-2 { grid-template-columns: 1fr !important; }
+      .grid-cols-3 { grid-template-columns: 1fr !important; }
+      .grid-cols-5 { grid-template-columns: 1fr !important; }
+      /* Ajusta barra de navegação para celular */
+      .fixed { position: fixed !important; bottom: 0 !important; left: 0 !important; right: 0 !important; width: 100% !important; padding: 12px 8px !important; transform: none !important; border-radius: 0 !important; }
+      #navDots { flex-wrap: wrap; }
+      button { width: 28px !important; height: 28px !important; }
+      button i { width: 14px !important; height: 14px !important; }
+      /* Ajusta mocks e cards */
+      .mock-card { padding: 12px !important; }
+      .screen-header { padding: 8px 12px !important; }
+    }
+    @media (max-width: 480px) {
+      .slide { padding: 20px 8px 100px 8px !important; }
+      h1 { font-size: 24px !important; }
+      h2 { font-size: 20px !important; }
+      h4 { font-size: 12px !important; }
+      p { font-size: 12px !important; }
+      .max-w-5xl, .max-w-3xl { padding: 0 !important; }
+      .mock-card { padding: 8px !important; }
+      .nav-dot { width: 6px !important; height: 6px !important; }
+      .nav-dot.active { width: 16px !important; }
+      #slideCounter { display: none !important; }
+    }
+  </style>
+  <style>body { box-sizing: border-box; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full bg-surface">
+  <div id="app" class="h-full flex"><div class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 bg-white/90 backdrop-blur-md rounded-full px-6 py-3 shadow-lg border border-purple-100 flex items-center gap-3"><button onclick="prevSlide()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-purple-50 text-primary"><i data-lucide="chevron-left" style="width:18px;height:18px"></i></button>
+    <div id="navDots" class="flex items-center gap-2"></div><button onclick="nextSlide()" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-purple-50 text-primary"><i data-lucide="chevron-right" style="width:18px;height:18px"></i></button> <span id="slideCounter" class="text-xs text-textSub ml-2 font-medium"></span>
+   </div><div id="slidesContainer" class="w-full h-full overflow-hidden relative"><div class="slide active flex-col items-center justify-center h-full p-8 text-center" data-category="capa">
+     <div class="fade-up">
+      <div class="w-20 h-20 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg"><i data-lucide="brain" style="width:40px;height:40px;color:white"></i>
+      </div>
+      <h1 id="mainTitle" class="text-5xl font-800 text-textMain mb-3">Prontuário Eletrônico</h1>
+      <p id="mainSubtitle" class="text-xl text-textSub mb-8">Sistema de Prontuário Psicológico</p>
+      <div class="screen-mock max-w-3xl mx-auto h-64 flex overflow-hidden shadow-xl">
+       <div class="mini-sidebar flex flex-col items-center py-4 gap-3">
+        <div class="w-6 h-6 rounded bg-white/20"></div>
+        <div class="w-6 h-6 rounded bg-white/10"></div>
+        <div class="w-6 h-6 rounded bg-white/10"></div>
+        <div class="w-6 h-6 rounded bg-white/10"></div>
+       </div>
+       <div class="flex-1 p-4">
+        <div class="screen-header rounded-lg mb-3 flex items-center gap-2">
+         <div class="w-3 h-3 rounded-full bg-white/40"></div>
+         <div class="h-2 w-24 bg-white/30 rounded"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-3">
+         <div class="mock-card p-3 h-20">
+          <div class="w-8 h-8 rounded-lg bg-purple-100 mb-2"></div>
+          <div class="h-2 w-16 bg-gray-100 rounded"></div>
+         </div>
+         <div class="mock-card p-3 h-20">
+          <div class="w-8 h-8 rounded-lg bg-purple-100 mb-2"></div>
+          <div class="h-2 w-16 bg-gray-100 rounded"></div>
+         </div>
+         <div class="mock-card p-3 h-20">
+          <div class="w-8 h-8 rounded-lg bg-purple-100 mb-2"></div>
+          <div class="h-2 w-16 bg-gray-100 rounded"></div>
+         </div>
+        </div>
+        <div class="mock-card p-3 mt-3 h-16">
+         <div class="h-2 w-full bg-gray-50 rounded mb-2"></div>
+         <div class="h-2 w-3/4 bg-gray-50 rounded"></div>
+        </div>
+       </div>
+      </div>
+      <p class="mt-6 text-sm text-textSub">Pressione → para navegar</p>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="sobre">
+     <div class="max-w-5xl w-full fade-up">
+      <h2 class="text-3xl font-700 text-textMain mb-2 text-center">Sobre o Projeto</h2>
+      <p class="text-textSub text-center mb-8">Um sistema completo para gestão clínica e acadêmica em psicologia</p>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+       <div class="mock-card p-5 text-center">
+        <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+         <i data-lucide="file-text" style="width:24px;height:24px;color:#6C3FA0"></i>
+        </div>
+        <h4 class="font-600 text-sm text-textMain">Prontuários</h4>
+        <p class="text-xs text-textSub mt-1">Gestão completa de registros clínicos</p>
+       </div>
+       <div class="mock-card p-5 text-center">
+        <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+         <i data-lucide="heart-pulse" style="width:24px;height:24px;color:#6C3FA0"></i>
+        </div>
+        <h4 class="font-600 text-sm text-textMain">Acompanhamento</h4>
+        <p class="text-xs text-textSub mt-1">Evolução psicológica dos pacientes</p>
+       </div>
+       <div class="mock-card p-5 text-center">
+        <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+         <i data-lucide="graduation-cap" style="width:24px;height:24px;color:#6C3FA0"></i>
+        </div>
+        <h4 class="font-600 text-sm text-textMain">Estágios</h4>
+        <p class="text-xs text-textSub mt-1">Gestão acadêmica de estágios</p>
+       </div>
+       <div class="mock-card p-5 text-center">
+        <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+         <i data-lucide="users" style="width:24px;height:24px;color:#6C3FA0"></i>
+        </div>
+        <h4 class="font-600 text-sm text-textMain">Supervisão</h4>
+        <p class="text-xs text-textSub mt-1">Controle de supervisões clínicas</p>
+       </div>
+       <div class="mock-card p-5 text-center">
+        <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+         <i data-lucide="user" style="width:24px;height:24px;color:#6C3FA0"></i>
+        </div>
+        <h4 class="font-600 text-sm text-textMain">Pacientes</h4>
+        <p class="text-xs text-textSub mt-1">Cadastro e acompanhamento</p>
+       </div>
+       <div class="mock-card p-5 text-center">
+        <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+         <i data-lucide="shield" style="width:24px;height:24px;color:#6C3FA0"></i>
+        </div>
+        <h4 class="font-600 text-sm text-textMain">Segurança</h4>
+        <p class="text-xs text-textSub mt-1">Sigilo e proteção de dados</p>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="sobre">
+     <div class="max-w-3xl w-full fade-up">
+      <h2 class="text-3xl font-700 text-textMain mb-8 text-center">Integrantes do Grupo</h2>
+      <div class="grid grid-cols-2 gap-4">
+       <div class="mock-card p-5 flex items-center gap-4">
+        <div class="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-700">
+         D
+        </div>
+        <div>
+         <p class="font-600 text-textMain">Daniel Dantas</p>
+         <p class="text-xs text-textSub">Estudante de Análise e Desenvolvimento de Dados</p>
+        </div>
+       </div>
+       <div class="mock-card p-5 flex items-center gap-4">
+        <div class="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-700">
+         D
+        </div>
+        <div>
+         <p class="font-600 text-textMain">Dilson Rodrigues</p>
+         <p class="text-xs text-textSub">Estudante de Análise e Desenvolvimento de Dados</p>
+        </div>
+       </div>
+       <div class="mock-card p-5 flex items-center gap-4">
+        <div class="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-700">
+         G
+        </div>
+        <div>
+         <p class="font-600 text-textMain">Gustavo Santos</p>
+         <p class="text-xs text-textSub">Estudante de Análise e Desenvolvimento de Dados</p>
+        </div>
+       </div>
+       <div class="mock-card p-5 flex items-center gap-4">
+        <div class="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center text-white font-700">
+         R
+        </div>
+        <div>
+         <p class="font-600 text-textMain">Ryan Mendes</p>
+         <p class="text-xs text-textSub">Estudante de Análise e Desenvolvimento de Dados</p>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="sobre">
+     <div class="max-w-5xl w-full fade-up">
+      <h2 class="text-3xl font-700 text-textMain mb-8 text-center">Sum&aacute;rio</h2>
+      <div class="grid grid-cols-4 gap-3">
+       <div class="mock-card p-4 text-center border-t-4 border-primary">
+        <i data-lucide="user" style="width:28px;height:28px;color:#6C3FA0" class="mx-auto mb-2"></i>
+        <h4 class="font-600 text-sm text-textMain">Paciente</h4>
+        <p class="text-xs text-textSub mt-1">Login, Dashboard, Consultas, Hist&oacute;rico</p>
+       </div>
+       <div class="mock-card p-4 text-center border-t-4 border-accent">
+        <i data-lucide="book-open" style="width:28px;height:28px;color:#8B5CF6" class="mx-auto mb-2"></i>
+        <h4 class="font-600 text-sm text-textMain">Estudante</h4>
+        <p class="text-xs text-textSub mt-1">Pacientes atribu&iacute;dos, evolu&ccedil;&atilde;o, anexos</p>
+       </div>
+       <div class="mock-card p-4 text-center border-t-4 border-primaryLight">
+        <i data-lucide="eye" style="width:28px;height:28px;color:#9B6DD7" class="mx-auto mb-2"></i>
+        <h4 class="font-600 text-sm text-textMain">Supervisor</h4>
+        <p class="text-xs text-textSub mt-1">Vis&atilde;o do aluno e triagem do t&eacute;cnico</p>
+       </div>
+       <div class="mock-card p-4 text-center border-t-4 border-primaryDark">
+        <i data-lucide="clipboard-list" style="width:28px;height:28px;color:#4A2B6E" class="mx-auto mb-2"></i>
+        <h4 class="font-600 text-sm text-textMain">T&eacute;cnico</h4>
+        <p class="text-xs text-textSub mt-1">Cadastro, triagem e encaminhamento</p>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="paciente">
+     <div class="max-w-5xl w-full fade-up">
+      <div class="flex items-center gap-3 mb-6">
+       <div class="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
+        <i data-lucide="user" style="width:20px;height:20px;color:white"></i>
+       </div>
+       <h2 class="text-3xl font-700 text-textMain">Bloco Paciente</h2>
+      </div>
+      <p class="text-textSub mb-6">Funcionalidades e telas disponíveis para o perfil de paciente no sistema.</p>
+      <div class="grid grid-cols-2 gap-3">
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="log-in" style="width:18px;height:18px;color:#6C3FA0"></i><span class="text-sm font-500 text-textMain">Login e Autenticação</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="user-plus" style="width:18px;height:18px;color:#6C3FA0"></i><span class="text-sm font-500 text-textMain">Cadastro de Paciente</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="key" style="width:18px;height:18px;color:#6C3FA0"></i><span class="text-sm font-500 text-textMain">Recuperação de Senha</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="layout-dashboard" style="width:18px;height:18px;color:#6C3FA0"></i><span class="text-sm font-500 text-textMain">Dashboard Principal</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="calendar" style="width:18px;height:18px;color:#6C3FA0"></i><span class="text-sm font-500 text-textMain">Agendamento de Consultas</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="clipboard" style="width:18px;height:18px;color:#6C3FA0"></i><span class="text-sm font-500 text-textMain">Histórico Clínico</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="bell" style="width:18px;height:18px;color:#6C3FA0"></i><span class="text-sm font-500 text-textMain">Notificações</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="message-circle" style="width:18px;height:18px;color:#6C3FA0"></i><span class="text-sm font-500 text-textMain">Chat / Mensagens</span>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="paciente">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primary mb-2 uppercase tracking-wider">Paciente</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Tela de Login</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/20"></div>
+          <div class="h-2 w-16 bg-white/20 rounded"></div>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/30"></div>
+          <div class="h-2 w-14 bg-white/40 rounded"></div>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 flex items-center justify-center bg-surface p-8">
+        <div class="mock-card p-6 w-64">
+         <div class="w-10 h-10 bg-primary rounded-xl mx-auto mb-4 flex items-center justify-center">
+          <i data-lucide="lock" style="width:18px;height:18px;color:white"></i>
+         </div>
+         <div class="text-center mb-4">
+          <div class="h-3 w-20 bg-gray-200 rounded mx-auto mb-2"></div>
+          <div class="h-2 w-32 bg-gray-100 rounded mx-auto"></div>
+         </div>
+         <div class="space-y-3">
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-primary rounded-lg flex items-center justify-center"><span class="text-white text-xs font-600">Entrar</span></div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="paciente">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primary mb-2 uppercase tracking-wider">Paciente</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Recuperação de Senha</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/20"></div>
+          <div class="h-2 w-16 bg-white/20 rounded"></div>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/30"></div>
+          <div class="h-2 w-14 bg-white/40 rounded"></div>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 flex items-center justify-center bg-surface p-8">
+        <div class="mock-card p-6 w-64">
+         <div class="w-10 h-10 bg-primary rounded-xl mx-auto mb-4 flex items-center justify-center">
+          <i data-lucide="key" style="width:18px;height:18px;color:white"></i>
+         </div>
+         <div class="text-center mb-4">
+          <div class="text-sm font-600 text-textMain mb-1">Esqueceu a senha?</div>
+          <div class="text-xs text-textSub">Informe seu e-mail para recuperar</div>
+         </div>
+         <div class="space-y-3">
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-primary rounded-lg flex items-center justify-center">
+            <span class="text-white text-xs font-600">Recuperar Senha</span>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="paciente">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primary mb-2 uppercase tracking-wider">Paciente</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Dashboard do Paciente</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Dashboard</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="calendar" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Agendamento</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="file-text" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Consulta</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="message-circle" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Mensagem</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="bell" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Notificação</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="history" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Histórico</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 p-4 bg-surface overflow-auto">
+        <div class="flex justify-between items-center mb-4">
+         <div class="h-3 w-32 bg-gray-200 rounded"></div>
+         <div class="w-8 h-8 rounded-full bg-purple-100"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-3 mb-3">
+         <div class="mock-card p-3">
+          <div class="flex items-center gap-2 mb-2">
+           <div class="w-6 h-6 rounded bg-green-100 flex items-center justify-center">
+            <i data-lucide="calendar" style="width:12px;height:12px;color:#16a34a"></i>
+           </div><span class="text-xs text-textSub">Próx. Consulta</span>
+          </div>
+          <div class="text-sm font-700 text-textMain">
+           15/03 - 14h
+          </div>
+         </div>
+         <div class="mock-card p-3">
+          <div class="flex items-center gap-2 mb-2">
+           <div class="w-6 h-6 rounded bg-blue-100 flex items-center justify-center">
+            <i data-lucide="clipboard" style="width:12px;height:12px;color:#2563eb"></i>
+           </div><span class="text-xs text-textSub">Sessões</span>
+          </div>
+          <div class="text-sm font-700 text-textMain">
+           12 realizadas
+          </div>
+         </div>
+         <div class="mock-card p-3">
+          <div class="flex items-center gap-2 mb-2">
+           <div class="w-6 h-6 rounded bg-purple-100 flex items-center justify-center">
+            <i data-lucide="activity" style="width:12px;height:12px;color:#6C3FA0"></i>
+           </div><span class="text-xs text-textSub">Evolução</span>
+          </div>
+          <div class="text-sm font-700 text-textMain">
+           Positiva ↑
+          </div>
+         </div>
+        </div>
+        <div class="mock-card p-3">
+         <div class="h-2 w-24 bg-gray-200 rounded mb-3"></div>
+         <div class="h-20 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg flex items-end p-2 gap-1">
+          <div class="w-4 h-6 bg-primary/30 rounded"></div>
+          <div class="w-4 h-10 bg-primary/50 rounded"></div>
+          <div class="w-4 h-8 bg-primary/40 rounded"></div>
+          <div class="w-4 h-14 bg-primary/60 rounded"></div>
+          <div class="w-4 h-12 bg-primary/70 rounded"></div>
+          <div class="w-4 h-16 bg-primary rounded"></div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="paciente">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primary mb-2 uppercase tracking-wider">Paciente</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Agendamento de Consultas</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Dashboard</span>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <i data-lucide="calendar" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Agendamento</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="file-text" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Consulta</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="message-circle" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Mensagem</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="bell" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Notificação</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="history" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Histórico</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 p-4 bg-surface">
+        <div class="h-3 w-36 bg-gray-200 rounded mb-4"></div>
+        <div class="grid grid-cols-7 gap-1 mb-3">
+         <div class="text-center text-xs text-textSub">
+          D
+         </div>
+         <div class="text-center text-xs text-textSub">
+          S
+         </div>
+         <div class="text-center text-xs text-textSub">
+          T
+         </div>
+         <div class="text-center text-xs text-textSub">
+          Q
+         </div>
+         <div class="text-center text-xs text-textSub">
+          Q
+         </div>
+         <div class="text-center text-xs text-textSub">
+          S
+         </div>
+         <div class="text-center text-xs text-textSub">
+          S
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          1
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          2
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          3
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          4
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          5
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          6
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          7
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          8
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          9
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          10
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          11
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          12
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          13
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          14
+         </div>
+         <div class="w-6 h-6 rounded-full text-xs flex items-center justify-center bg-primary text-white font-600">
+          15
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          16
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          17
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          18
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          19
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center bg-purple-100 text-primary">
+          20
+         </div>
+         <div class="w-6 h-6 rounded text-xs flex items-center justify-center text-textSub">
+          21
+         </div>
+        </div>
+        <div class="mock-card p-3">
+         <div class="flex items-center gap-2 mb-2">
+          <div class="w-2 h-2 rounded-full bg-green-400 pulse-dot"></div><span class="text-xs font-500 text-textMain">Horários disponíveis - 15/03</span>
+         </div>
+         <div class="flex gap-2">
+          <span class="text-xs bg-purple-50 text-primary px-2 py-1 rounded">09:00</span><span class="text-xs bg-purple-50 text-primary px-2 py-1 rounded">10:00</span><span class="text-xs bg-primary text-white px-2 py-1 rounded font-500">14:00</span><span class="text-xs bg-purple-50 text-primary px-2 py-1 rounded">16:00</span>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="paciente">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primary mb-2 uppercase tracking-wider">Paciente</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Notificações</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Dashboard</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="calendar" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Agendamento</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="file-text" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Consulta</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="message-circle" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Mensagem</span>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <i data-lucide="bell" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Notificação</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="history" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Histórico</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 p-4 bg-surface overflow-auto space-y-3">
+        <div class="mock-card p-3 border-l-4 border-green-400">
+         <div class="flex items-start justify-between">
+          <div>
+           <p class="text-xs font-600 text-textMain">Consulta Confirmada</p>
+           <p class="text-xs text-textSub mt-1">Sua consulta foi confirmada para 15/03 às 14:00</p>
+          </div>
+          <div class="w-2 h-2 rounded-full bg-green-400"></div>
+         </div>
+         <p class="text-xs text-textSub mt-2">Há 2 horas</p>
+        </div>
+        <div class="mock-card p-3 border-l-4 border-blue-400">
+         <div class="flex items-start justify-between">
+          <div>
+           <p class="text-xs font-600 text-textMain">Lembrete de Consulta</p>
+           <p class="text-xs text-textSub mt-1">Sua próxima consulta é amanhã às 14:00</p>
+          </div>
+          <div class="w-2 h-2 rounded-full bg-blue-400"></div>
+         </div>
+         <p class="text-xs text-textSub mt-2">Há 1 dia</p>
+        </div>
+        <div class="mock-card p-3 border-l-4 border-purple-400">
+         <div class="flex items-start justify-between">
+          <div>
+           <p class="text-xs font-600 text-textMain">Nova Mensagem</p>
+           <p class="text-xs text-textSub mt-1">Seu psicólogo enviou uma nova mensagem</p>
+          </div>
+          <div class="w-2 h-2 rounded-full bg-purple-400"></div>
+         </div>
+         <p class="text-xs text-textSub mt-2">Há 3 dias</p>
+        </div>
+        <div class="mock-card p-3 border-l-4 border-amber-400">
+         <div class="flex items-start justify-between">
+          <div>
+           <p class="text-xs font-600 text-textMain">Atualização do Prontuário</p>
+           <p class="text-xs text-textSub mt-1">Seu prontuário foi atualizado</p>
+          </div>
+         </div>
+         <p class="text-xs text-textSub mt-2">Há 5 dias</p>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="paciente">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primary mb-2 uppercase tracking-wider">Paciente</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Chat / Mensagens</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Dashboard</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="calendar" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Agendamento</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="file-text" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Consulta</span>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <i data-lucide="message-circle" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Mensagem</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="bell" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Notificação</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="history" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Histórico</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 p-4 bg-surface flex flex-col">
+        <div class="mock-card p-2 flex items-center gap-2 mb-3">
+         <div class="w-7 h-7 rounded-full bg-primary/20"></div>
+         <div>
+          <div class="h-2 w-20 bg-gray-200 rounded"></div>
+          <div class="h-1.5 w-12 bg-green-200 rounded mt-1"></div>
+         </div>
+        </div>
+        <div class="flex-1 space-y-2 overflow-auto">
+         <div class="flex justify-start">
+          <div class="bg-white rounded-lg rounded-tl-none p-2 max-w-48 shadow-sm">
+           <p class="text-xs text-textMain">Olá! Como você está se sentindo hoje?</p><span class="text-xs text-textSub">10:30</span>
+          </div>
+         </div>
+         <div class="flex justify-end">
+          <div class="bg-primary rounded-lg rounded-tr-none p-2 max-w-48">
+           <p class="text-xs text-white">Estou melhor esta semana, obrigado!</p><span class="text-xs text-white/60">10:32</span>
+          </div>
+         </div>
+         <div class="flex justify-start">
+          <div class="bg-white rounded-lg rounded-tl-none p-2 max-w-48 shadow-sm">
+           <p class="text-xs text-textMain">Que ótimo! Vamos manter o acompanhamento.</p><span class="text-xs text-textSub">10:33</span>
+          </div>
+         </div>
+        </div>
+        <div class="flex gap-2 mt-2">
+         <div class="flex-1 h-8 bg-white rounded-lg border border-gray-200"></div>
+         <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+          <i data-lucide="send" style="width:12px;height:12px;color:white"></i>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="paciente">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primary mb-2 uppercase tracking-wider">Paciente</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Histórico Clínico</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Dashboard</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="calendar" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Agendamento</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="file-text" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Consulta</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="message-circle" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Mensagem</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="bell" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Notificação</span>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <i data-lucide="history" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Histórico</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 p-4 bg-surface overflow-auto space-y-3">
+        <div class="mock-card p-3">
+         <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-600 text-textMain">Consulta - 10/03/2026</p>
+          <p class="text-xs text-textSub">Psicólogo A</p>
+         </div>
+         <div class="h-2 w-full bg-gray-100 rounded mb-2"></div>
+         <div class="h-2 w-3/4 bg-gray-100 rounded"></div>
+        </div>
+        <div class="mock-card p-3">
+         <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-600 text-textMain">Consulta - 03/03/2026</p>
+          <p class="text-xs text-textSub">Psicólogo A</p>
+         </div>
+         <div class="h-2 w-full bg-gray-100 rounded mb-2"></div>
+         <div class="h-2 w-4/5 bg-gray-100 rounded"></div>
+        </div>
+        <div class="mock-card p-3">
+         <div class="flex items-center justify-between mb-2">
+          <p class="text-xs font-600 text-textMain">Triagem - 24/02/2026</p>
+          <p class="text-xs text-textSub">T&eacute;cnico</p>
+         </div>
+         <div class="h-2 w-full bg-gray-100 rounded mb-2"></div>
+         <div class="h-2 w-2/3 bg-gray-100 rounded"></div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="paciente">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primary mb-2 uppercase tracking-wider">Paciente</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Acompanhamento Terapêutico</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Dashboard</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="calendar" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Agendamentos</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="file-text" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Histórico</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="bell" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Notificações</span>
+         </div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <i data-lucide="message-circle" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Mensagens</span>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <i data-lucide="activity" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Acompanhamento</span>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 p-4 bg-surface overflow-auto">
+        <div class="flex items-center gap-3 mb-4">
+         <div class="flex-1">
+          <div class="h-3 w-24 bg-gray-200 rounded mb-1"></div>
+          <div class="h-2 w-32 bg-gray-100 rounded"></div>
+         </div>
+         <div class="w-12 h-12 rounded-full bg-purple-100"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mb-3">
+         <div class="mock-card p-2 text-center">
+          <p class="text-lg font-700 text-green-500">80%</p>
+          <p class="text-xs text-textSub">Melhora</p>
+         </div>
+         <div class="mock-card p-2 text-center">
+          <p class="text-lg font-700 text-primary">12</p>
+          <p class="text-xs text-textSub">Sessões</p>
+         </div>
+         <div class="mock-card p-2 text-center">
+          <p class="text-lg font-700 text-blue-500">4</p>
+          <p class="text-xs text-textSub">Meses</p>
+         </div>
+        </div>
+        <div class="mock-card p-3">
+         <p class="text-xs font-600 text-textMain mb-2">Evolução Recente</p>
+         <div class="h-16 bg-gray-50 rounded flex items-end gap-1 p-2">
+          <div class="flex-1 bg-primary/30 rounded h-2/3"></div>
+          <div class="flex-1 bg-primary/40 rounded h-3/4"></div>
+          <div class="flex-1 bg-primary/50 rounded h-5/6"></div>
+          <div class="flex-1 bg-primary rounded h-full"></div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="estagiario">
+     <div class="max-w-5xl w-full fade-up">
+      <div class="flex items-center gap-3 mb-4">
+       <div class="w-10 h-10 bg-accent rounded-xl flex items-center justify-center">
+        <i data-lucide="book-open" style="width:20px;height:20px;color:white"></i>
+       </div>
+       <h2 class="text-3xl font-700 text-textMain">Bloco Estudante</h2>
+      </div>
+      <div class="mock-card p-4 mb-6 border-l-4 border-accent bg-purple-50/50">
+       <p class="text-sm text-textMain italic">O estudante acompanha apenas os pacientes atribu&iacute;dos pelo servi&ccedil;o, registra evolu&ccedil;&otilde;es cl&iacute;nicas e anexa documentos quando necess&aacute;rio, sempre com vis&atilde;o supervisionada.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="log-in" style="width:18px;height:18px;color:#8B5CF6"></i><span class="text-sm font-500 text-textMain">Login e Autenticação</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="user-plus" style="width:18px;height:18px;color:#8B5CF6"></i><span class="text-sm font-500 text-textMain">Cadastro de Estudante</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="key" style="width:18px;height:18px;color:#8B5CF6"></i><span class="text-sm font-500 text-textMain">Recuperação de Senha</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="layout-dashboard" style="width:18px;height:18px;color:#8B5CF6"></i><span class="text-sm font-500 text-textMain">Dashboard do Aluno</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="calendar" style="width:18px;height:18px;color:#8B5CF6"></i><span class="text-sm font-500 text-textMain">Agenda de Atendimentos</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="users" style="width:18px;height:18px;color:#8B5CF6"></i><span class="text-sm font-500 text-textMain">Pacientes Atribu&iacute;dos</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="edit-3" style="width:18px;height:18px;color:#8B5CF6"></i><span class="text-sm font-500 text-textMain">Registro de Evolu&ccedil;&atilde;o</span>
+       </div>
+       <div class="mock-card p-4 flex items-center gap-3">
+        <i data-lucide="paperclip" style="width:18px;height:18px;color:#8B5CF6"></i><span class="text-sm font-500 text-textMain">Anexar Documentos</span>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="estagiario">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-accent mb-2 uppercase tracking-wider">Estudante</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Tela de Login</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/20"></div>
+          <div class="h-2 w-16 bg-white/20 rounded"></div>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/30"></div>
+          <div class="h-2 w-14 bg-white/40 rounded"></div>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 flex items-center justify-center bg-surface p-8">
+        <div class="mock-card p-6 w-64">
+         <div class="w-10 h-10 bg-accent rounded-xl mx-auto mb-4 flex items-center justify-center">
+          <i data-lucide="lock" style="width:18px;height:18px;color:white"></i>
+         </div>
+         <div class="text-center mb-4">
+          <div class="h-3 w-20 bg-gray-200 rounded mx-auto mb-2"></div>
+          <div class="h-2 w-32 bg-gray-100 rounded mx-auto"></div>
+         </div>
+         <div class="space-y-3">
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-accent rounded-lg flex items-center justify-center"><span class="text-white text-xs font-600">Entrar</span></div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="estagiario">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-accent mb-2 uppercase tracking-wider">Estudante</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Recuperação de Senha</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/20"></div>
+          <div class="h-2 w-16 bg-white/20 rounded"></div>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/30"></div>
+          <div class="h-2 w-14 bg-white/40 rounded"></div>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 flex items-center justify-center bg-surface p-8">
+        <div class="mock-card p-6 w-64">
+         <div class="w-10 h-10 bg-accent rounded-xl mx-auto mb-4 flex items-center justify-center">
+          <i data-lucide="key" style="width:18px;height:18px;color:white"></i>
+         </div>
+         <div class="text-center mb-4">
+          <div class="text-sm font-600 text-textMain mb-1">Esqueceu a senha?</div>
+          <div class="text-xs text-textSub">Informe seu e-mail para recuperar</div>
+         </div>
+         <div class="space-y-3">
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-accent rounded-lg flex items-center justify-center">
+            <span class="text-white text-xs font-600">Recuperar Senha</span>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="estagiario">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-accent mb-2 uppercase tracking-wider">Estudante</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Dashboard do Estudante</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6"><div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span></div>
+        <div class="space-y-2">
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2"><i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Dashboard</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="users" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Meus Pacientes</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="file-text" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Prontu&aacute;rios</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="edit-3" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Evolu&ccedil;&atilde;o</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="paperclip" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Anexos</span></div>
+        </div>
+       </div>
+       <div class="flex-1 p-4 bg-surface">
+        <div class="flex justify-between items-center mb-3"><div><div class="h-3 w-28 bg-gray-200 rounded mb-1"></div><div class="h-2 w-44 bg-gray-100 rounded"></div></div><div class="w-8 h-8 rounded-full bg-accent/20"></div></div>
+        <div class="grid grid-cols-4 gap-2 mb-3">
+         <div class="mock-card p-2 text-center"><div class="text-lg font-700 text-primary">5</div><div class="text-xs text-textSub">Atribu&iacute;dos</div></div>
+         <div class="mock-card p-2 text-center"><div class="text-lg font-700 text-green-600">3</div><div class="text-xs text-textSub">Hoje</div></div>
+         <div class="mock-card p-2 text-center"><div class="text-lg font-700 text-blue-600">7</div><div class="text-xs text-textSub">Evolu&ccedil;&otilde;es</div></div>
+         <div class="mock-card p-2 text-center"><div class="text-lg font-700 text-orange-500">2</div><div class="text-xs text-textSub">Pendentes</div></div>
+        </div>
+        <div class="mock-card p-3">
+         <div class="text-xs font-500 text-textMain mb-2">Agenda e tarefas do dia</div>
+         <div class="space-y-2">
+          <div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-green-100"></div><span class="text-xs">Paciente atribuido A</span><span class="text-xs text-green-600 ml-auto">14:00</span></div>
+          <div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-blue-100"></div><span class="text-xs">Registrar evolu&ccedil;&atilde;o</span><span class="text-xs text-blue-600 ml-auto">15:30</span></div>
+          <div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-purple-100"></div><span class="text-xs">Anexar documento</span><span class="text-xs text-purple-600 ml-auto">17:00</span></div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="estagiario">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-accent mb-2 uppercase tracking-wider">Estudante</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Pacientes Atribu&iacute;dos ao Estudante</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col"><div class="flex items-center gap-2 mb-6"><div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span></div><div class="space-y-2"><div class="sidebar-item active px-3 py-2 flex items-center gap-2"><i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Dashboard</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="user" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Meu Paciente</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="file-text" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Prontuário</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span></div></div></div>
+       <div class="flex-1 p-4 bg-surface overflow-auto">
+        <div class="mock-card p-3 mb-3 border-l-4 border-accent"><div class="text-xs font-600 text-textMain mb-1">Meu Paciente</div><div class="text-xs text-textSub">Você tem 1 paciente atribuído ao seu atendimento.</div></div>
+        <div class="mock-card p-4"><div class="flex items-center gap-3"><div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center"><i data-lucide="user" style="width:24px;height:24px;color:#6C3FA0"></i></div><div class="flex-1"><div class="text-sm font-600 text-textMain">Paciente A</div><div class="text-xs text-textSub">Atribuído para atendimento clínico</div></div><div class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Ativo</div></div></div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="estagiario">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-accent mb-2 uppercase tracking-wider">Estudante</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Registro de Evolução</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col"><div class="flex items-center gap-2 mb-6"><div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span></div><div class="space-y-2"><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Dashboard</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="user" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Meu Paciente</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="file-text" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Prontuário</span></div><div class="sidebar-item active px-3 py-2 flex items-center gap-2"><i data-lucide="edit-3" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Evolução</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="paperclip" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Anexos</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span></div></div></div>
+       <div class="flex-1 p-4 bg-surface flex flex-col">
+        <div class="flex items-center justify-between mb-4"><div><div class="text-xs text-textSub">Paciente</div><div class="text-sm font-600 text-textMain">Paciente A</div></div><div class="text-xs bg-purple-100 text-primary px-2 py-1 rounded">Hoje</div></div>
+        <div class="flex-1 mb-3 flex flex-col"><div class="text-xs font-600 text-textMain mb-2">Escrever evolução clínica</div><div class="flex-1 bg-white rounded-lg border border-gray-200 p-3 resize-none"><div class="text-xs text-gray-400">Descreva o andamento cliníco da sessão...</div></div></div>
+        <div class="mock-card p-3 border border-dashed border-purple-300 bg-purple-50/50 flex items-center gap-2"><i data-lucide="paperclip" style="width:16px;height:16px;color:#8B5CF6"></i><span class="text-xs font-600 text-textMain">Anexar documento</span></div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="supervisor">
+     <div class="max-w-5xl w-full fade-up">
+      <div class="flex items-center gap-3 mb-4">
+       <div class="w-10 h-10 bg-primaryLight rounded-xl flex items-center justify-center">
+        <i data-lucide="eye" style="width:20px;height:20px;color:white"></i>
+       </div>
+       <h2 class="text-3xl font-700 text-textMain">Bloco Supervisor (Professor)</h2>
+      </div>
+      <div class="mock-card p-4 mb-6 border-l-4 border-primaryLight bg-purple-50/50">
+       <p class="text-sm text-textMain italic">O supervisor visualiza tudo que o estudante acessa, acompanha as evolu&ccedil;&otilde;es e documentos anexados, e tamb&eacute;m confere a triagem realizada pelo t&eacute;cnico.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="log-in" style="width:18px;height:18px;color:#9B6DD7"></i><span class="text-sm font-500 text-textMain">Login e Autenticação</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="user-plus" style="width:18px;height:18px;color:#9B6DD7"></i><span class="text-sm font-500 text-textMain">Cadastro de Supervisor</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="key" style="width:18px;height:18px;color:#9B6DD7"></i><span class="text-sm font-500 text-textMain">Recuperação de Senha</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="layout-dashboard" style="width:18px;height:18px;color:#9B6DD7"></i><span class="text-sm font-500 text-textMain">Painel do Supervisor</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="users" style="width:18px;height:18px;color:#9B6DD7"></i><span class="text-sm font-500 text-textMain">Pacientes dos Estudantes</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="edit-3" style="width:18px;height:18px;color:#9B6DD7"></i><span class="text-sm font-500 text-textMain">Evolu&ccedil;&otilde;es Registradas</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="clipboard-list" style="width:18px;height:18px;color:#9B6DD7"></i><span class="text-sm font-500 text-textMain">Triagem do T&eacute;cnico</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="message-square" style="width:18px;height:18px;color:#9B6DD7"></i><span class="text-sm font-500 text-textMain">Feedback ao Estudante</span></div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="supervisor">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primaryLight mb-2 uppercase tracking-wider">Supervisor</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Tela de Login</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/20"></div>
+          <div class="h-2 w-16 bg-white/20 rounded"></div>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/30"></div>
+          <div class="h-2 w-14 bg-white/40 rounded"></div>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 flex items-center justify-center bg-surface p-8">
+        <div class="mock-card p-6 w-64">
+         <div class="w-10 h-10 bg-primaryLight rounded-xl mx-auto mb-4 flex items-center justify-center">
+          <i data-lucide="lock" style="width:18px;height:18px;color:white"></i>
+         </div>
+         <div class="text-center mb-4">
+          <div class="h-3 w-20 bg-gray-200 rounded mx-auto mb-2"></div>
+          <div class="h-2 w-32 bg-gray-100 rounded mx-auto"></div>
+         </div>
+         <div class="space-y-3">
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-primaryLight rounded-lg flex items-center justify-center"><span class="text-white text-xs font-600">Entrar</span></div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="supervisor">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primaryLight mb-2 uppercase tracking-wider">Supervisor</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Recuperação de Senha</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/20"></div>
+          <div class="h-2 w-16 bg-white/20 rounded"></div>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/30"></div>
+          <div class="h-2 w-14 bg-white/40 rounded"></div>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 flex items-center justify-center bg-surface p-8">
+        <div class="mock-card p-6 w-64">
+         <div class="w-10 h-10 bg-primaryLight rounded-xl mx-auto mb-4 flex items-center justify-center">
+          <i data-lucide="key" style="width:18px;height:18px;color:white"></i>
+         </div>
+         <div class="text-center mb-4">
+          <div class="text-sm font-600 text-textMain mb-1">Esqueceu a senha?</div>
+          <div class="text-xs text-textSub">Informe seu e-mail para recuperar</div>
+         </div>
+         <div class="space-y-3">
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-primaryLight rounded-lg flex items-center justify-center">
+            <span class="text-white text-xs font-600">Recuperar Senha</span>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="supervisor">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primaryLight mb-2 uppercase tracking-wider">Supervisor</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Painel do Supervisor</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6"><div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span></div>
+        <div class="space-y-2">
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2"><i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Painel</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="edit-3" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Evoluções</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="clipboard-list" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Triagem</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="paperclip" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Anexos</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="message-square" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Supervisão</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span></div>
+        </div>
+       </div>
+       <div class="flex-1 p-4 bg-surface">
+        <div class="grid grid-cols-4 gap-2 mb-3">
+         <div class="mock-card p-2 text-center"><div class="text-lg font-700 text-primary">8</div><div class="text-xs text-textSub">Estudantes</div></div>
+         <div class="mock-card p-2 text-center"><div class="text-lg font-700 text-blue-600">21</div><div class="text-xs text-textSub">Pacientes</div></div>
+         <div class="mock-card p-2 text-center"><div class="text-lg font-700 text-green-600">14</div><div class="text-xs text-textSub">Evolu&ccedil;&otilde;es</div></div>
+         <div class="mock-card p-2 text-center"><div class="text-lg font-700 text-orange-500">5</div><div class="text-xs text-textSub">Triagens</div></div>
+        </div>
+        <div class="mock-card p-3">
+         <div class="text-xs font-500 text-textMain mb-2">Itens para acompanhar</div>
+         <div class="space-y-2">
+          <div class="flex items-center justify-between p-1.5 bg-purple-50 rounded"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-purple-100"></div><span class="text-xs">Aluno A - evolu&ccedil;&atilde;o registrada</span></div><span class="text-xs bg-purple-200 text-purple-700 px-1.5 rounded">Ver</span></div>
+          <div class="flex items-center justify-between p-1.5 bg-yellow-50 rounded"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-yellow-100"></div><span class="text-xs">T&eacute;cnico - triagem conclu&iacute;da</span></div><span class="text-xs bg-yellow-200 text-yellow-700 px-1.5 rounded">Revisar</span></div>
+          <div class="flex items-center justify-between p-1.5 bg-blue-50 rounded"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-blue-100"></div><span class="text-xs">Aluno B - documento anexado</span></div><span class="text-xs bg-blue-200 text-blue-700 px-1.5 rounded">Abrir</span></div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="supervisor">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primaryLight mb-2 uppercase tracking-wider">Supervisor</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Anexos e Documentos</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6"><div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span></div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Painel</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="edit-3" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Evoluções</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="clipboard-list" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Triagem</span></div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2"><i data-lucide="paperclip" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Anexos</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="message-square" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Supervisão</span></div>
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span></div>
+        </div>
+       </div>
+       <div class="flex-1 p-4 bg-surface overflow-auto">
+        <div class="mock-card p-3 mb-3"><div class="text-xs font-600 text-textMain mb-2">Documentos anexados</div><div class="text-xs text-textSub">Arquivos enviados pelos estudantes para revisão</div></div>
+        <div class="space-y-2">
+         <div class="mock-card p-3 border-l-4 border-blue-400"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-blue-50 rounded flex items-center justify-center"><i data-lucide="file-pdf" style="width:14px;height:14px;color:#2563eb"></i></div><div class="flex-1"><div class="text-xs font-600 text-textMain">Relatório - Paciente A.pdf</div><div class="text-xs text-textSub">Aluno B • 2 dias atrás</div></div><div class="text-xs bg-purple-100 text-primary px-2 py-1 rounded">Revisar</div></div></div>
+         <div class="mock-card p-3 border-l-4 border-green-400"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-green-50 rounded flex items-center justify-center"><i data-lucide="file-image" style="width:14px;height:14px;color:#16a34a"></i></div><div class="flex-1"><div class="text-xs font-600 text-textMain">Teste psicológico_scan.jpg</div><div class="text-xs text-textSub">Aluno A • 5 dias atrás</div></div><div class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Aprovado</div></div></div>
+         <div class="mock-card p-3 border-l-4 border-purple-400"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-purple-50 rounded flex items-center justify-center"><i data-lucide="file-text" style="width:14px;height:14px;color:#6C3FA0"></i></div><div class="flex-1"><div class="text-xs font-600 text-textMain">Nota evolução clínica.docx</div><div class="text-xs text-textSub">Aluno C • 1 semana atrás</div></div></div></div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="supervisor">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primaryLight mb-2 uppercase tracking-wider">Supervisor</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Vis&atilde;o do Estudante e Triagem</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col"><div class="flex items-center gap-2 mb-6"><div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span></div><div class="space-y-2"><div class="sidebar-item active px-3 py-2 flex items-center gap-2"><i data-lucide="eye" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Supervis&atilde;o</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="clipboard-list" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Triagem</span></div></div></div>
+       <div class="flex-1 p-4 bg-surface">
+        <div class="grid grid-cols-2 gap-2 mb-3"><div class="mock-card p-3"><div class="text-xs font-600 text-textMain mb-1">Tudo que o aluno v&ecirc;</div><div class="text-xs text-textSub">Pacientes atribu&iacute;dos, prontu&aacute;rio, evolu&ccedil;&atilde;o e anexos.</div></div><div class="mock-card p-3"><div class="text-xs font-600 text-textMain mb-1">Triagem do t&eacute;cnico</div><div class="text-xs text-textSub">Dados iniciais, risco, prioridade e encaminhamento.</div></div></div>
+        <div class="mock-card p-3"><div class="text-xs font-600 text-textMain mb-2">Paciente em acompanhamento</div><div class="space-y-2"><div class="h-2 w-full bg-gray-100 rounded"></div><div class="h-2 w-4/5 bg-gray-100 rounded"></div><div class="h-2 w-2/3 bg-gray-100 rounded"></div></div></div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="psicologo">
+     <div class="max-w-5xl w-full fade-up">
+      <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 bg-primaryDark rounded-xl flex items-center justify-center"><i data-lucide="clipboard-list" style="width:20px;height:20px;color:white"></i></div><h2 class="text-3xl font-700 text-textMain">Bloco T&eacute;cnico</h2></div>
+      <div class="mock-card p-4 mb-6 border-l-4 border-primaryDark bg-purple-50/50"><p class="text-sm text-textMain italic">O t&eacute;cnico realiza o cadastro do paciente, organiza os dados iniciais e faz a triagem antes da defini&ccedil;&atilde;o do acompanhamento.</p></div>
+      <div class="grid grid-cols-2 gap-3">
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="log-in" style="width:18px;height:18px;color:#4A2B6E"></i><span class="text-sm font-500 text-textMain">Login e Autenticação</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="user-plus" style="width:18px;height:18px;color:#4A2B6E"></i><span class="text-sm font-500 text-textMain">Cadastro de Técnico</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="key" style="width:18px;height:18px;color:#4A2B6E"></i><span class="text-sm font-500 text-textMain">Recuperação de Senha</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="clipboard-list" style="width:18px;height:18px;color:#4A2B6E"></i><span class="text-sm font-500 text-textMain">Triagem Inicial</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="file-input" style="width:18px;height:18px;color:#4A2B6E"></i><span class="text-sm font-500 text-textMain">Dados Cadastrais</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="send" style="width:18px;height:18px;color:#4A2B6E"></i><span class="text-sm font-500 text-textMain">Encaminhamento</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="users" style="width:18px;height:18px;color:#4A2B6E"></i><span class="text-sm font-500 text-textMain">Lista de Pacientes</span></div>
+       <div class="mock-card p-4 flex items-center gap-3"><i data-lucide="history" style="width:18px;height:18px;color:#4A2B6E"></i><span class="text-sm font-500 text-textMain">Hist&oacute;rico de Triagens</span></div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="psicologo">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primaryDark mb-2 uppercase tracking-wider">Técnico</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Tela de Login</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/20"></div>
+          <div class="h-2 w-16 bg-white/20 rounded"></div>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/30"></div>
+          <div class="h-2 w-14 bg-white/40 rounded"></div>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 flex items-center justify-center bg-surface p-8">
+        <div class="mock-card p-6 w-64">
+         <div class="w-10 h-10 bg-primaryDark rounded-xl mx-auto mb-4 flex items-center justify-center">
+          <i data-lucide="lock" style="width:18px;height:18px;color:white"></i>
+         </div>
+         <div class="text-center mb-4">
+          <div class="h-3 w-20 bg-gray-200 rounded mx-auto mb-2"></div>
+          <div class="h-2 w-32 bg-gray-100 rounded mx-auto"></div>
+         </div>
+         <div class="space-y-3">
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-primaryDark rounded-lg flex items-center justify-center"><span class="text-white text-xs font-600">Entrar</span></div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="psicologo">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primaryDark mb-2 uppercase tracking-wider">Técnico</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Recuperação de Senha</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col">
+        <div class="flex items-center gap-2 mb-6">
+         <div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span>
+        </div>
+        <div class="space-y-2">
+         <div class="sidebar-item px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/20"></div>
+          <div class="h-2 w-16 bg-white/20 rounded"></div>
+         </div>
+         <div class="sidebar-item active px-3 py-2 flex items-center gap-2">
+          <div class="w-4 h-4 rounded bg-white/30"></div>
+          <div class="h-2 w-14 bg-white/40 rounded"></div>
+         </div>
+        </div>
+       </div>
+       <div class="flex-1 flex items-center justify-center bg-surface p-8">
+        <div class="mock-card p-6 w-64">
+         <div class="w-10 h-10 bg-primaryDark rounded-xl mx-auto mb-4 flex items-center justify-center">
+          <i data-lucide="key" style="width:18px;height:18px;color:white"></i>
+         </div>
+         <div class="text-center mb-4">
+          <div class="text-sm font-600 text-textMain mb-1">Esqueceu a senha?</div>
+          <div class="text-xs text-textSub">Informe seu e-mail para recuperar</div>
+         </div>
+         <div class="space-y-3">
+          <div class="h-8 w-full bg-gray-50 rounded-lg border border-gray-200"></div>
+          <div class="h-8 w-full bg-primaryDark rounded-lg flex items-center justify-center">
+            <span class="text-white text-xs font-600">Recuperar Senha</span>
+          </div>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="psicologo">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primaryDark mb-2 uppercase tracking-wider">T&eacute;cnico</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Painel do T&eacute;cnico</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col"><div class="flex items-center gap-2 mb-6"><div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span></div><div class="space-y-2"><div class="sidebar-item active px-3 py-2 flex items-center gap-2"><i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Painel</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="user-plus" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Cadastro</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="clipboard-list" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Triagem</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="send" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Encaminhar</span></div></div></div>
+       <div class="flex-1 p-4 bg-surface"><div class="grid grid-cols-3 gap-2 mb-3"><div class="mock-card p-2 text-center"><div class="text-lg font-700 text-primary">18</div><div class="text-xs text-textSub">Cadastros</div></div><div class="mock-card p-2 text-center"><div class="text-lg font-700 text-green-600">6</div><div class="text-xs text-textSub">Triagens</div></div><div class="mock-card p-2 text-center"><div class="text-lg font-700 text-orange-500">4</div><div class="text-xs text-textSub">Encaminhar</div></div></div><div class="mock-card p-3"><div class="text-xs font-500 mb-2">Pr&oacute;ximas triagens</div><div class="space-y-2"><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-purple-100"></div><span class="text-xs">Cadastro novo - 09:00</span></div><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-blue-100"></div><span class="text-xs">Triagem pendente - 10:30</span></div><div class="flex items-center gap-2"><div class="w-5 h-5 rounded-full bg-green-100"></div><span class="text-xs">Encaminhar supervisor - 14:00</span></div></div></div></div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="psicologo">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primaryDark mb-2 uppercase tracking-wider">T&eacute;cnico</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Cadastro e Triagem</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col"><div class="flex items-center gap-2 mb-6"><div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span></div><div class="space-y-2"><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Painel</span></div><div class="sidebar-item active px-3 py-2 flex items-center gap-2"><i data-lucide="user-plus" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Cadastro</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="clipboard-list" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Triagem</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="send" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Encaminhar</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span></div></div></div>
+       <div class="flex-1 p-4 bg-surface"><div class="grid grid-cols-2 gap-2 mb-3"><div class="mock-card p-3"><div class="text-xs text-textSub mb-1">Dados do paciente</div><div class="h-2 w-full bg-gray-100 rounded mb-1"></div><div class="h-2 w-3/4 bg-gray-100 rounded"></div></div><div class="mock-card p-3"><div class="text-xs text-textSub mb-1">Contato e respons&aacute;vel</div><div class="h-2 w-full bg-gray-100 rounded mb-1"></div><div class="h-2 w-2/3 bg-gray-100 rounded"></div></div></div><div class="mock-card p-3 mb-2"><div class="text-xs font-600 text-textMain mb-2">Triagem inicial</div><div class="grid grid-cols-3 gap-2"><div class="h-8 rounded bg-purple-50 flex items-center justify-center text-xs text-textSub">Queixa</div><div class="h-8 rounded bg-purple-50 flex items-center justify-center text-xs text-textSub">Risco</div><div class="h-8 rounded bg-purple-50 flex items-center justify-center text-xs text-textSub">Prioridade</div></div></div><div class="mock-card p-3"><div class="flex items-center justify-between"><span class="text-xs font-600 text-textMain">Encaminhar para supervisor</span><span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Salvar triagem</span></div></div></div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8" data-category="psicologo">
+     <div class="max-w-5xl w-full fade-up">
+      <p class="text-xs font-600 text-primaryDark mb-2 uppercase tracking-wider">Técnico</p>
+      <h2 class="text-2xl font-700 text-textMain mb-6">Encaminhamento de Paciente</h2>
+      <div class="screen-mock h-80 flex overflow-hidden shadow-lg">
+       <div class="w-48 bg-primaryDark p-4 flex flex-col"><div class="flex items-center gap-2 mb-6"><div class="w-8 h-8 rounded-lg bg-white/20"></div><span class="text-white text-xs font-600">Prontuário Eletrônico</span></div><div class="space-y-2"><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="layout-dashboard" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Painel</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="user-plus" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Cadastro</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="clipboard-list" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Triagem</span></div><div class="sidebar-item active px-3 py-2 flex items-center gap-2"><i data-lucide="send" style="width:14px;height:14px;color:rgba(255,255,255,0.8)"></i><span class="text-white/80 text-xs">Encaminhar</span></div><div class="sidebar-item px-3 py-2 flex items-center gap-2"><i data-lucide="settings" style="width:14px;height:14px;color:rgba(255,255,255,0.5)"></i><span class="text-white/50 text-xs">Ajustes</span></div></div></div>
+       <div class="flex-1 p-4 bg-surface overflow-auto"><div class="mock-card p-3 mb-3"><div class="text-xs font-600 text-textMain mb-2">Encaminhar paciente para supervisor</div><div class="text-xs text-textSub">Após conclusão da triagem, enviar paciente e documentação para revisão do supervisor</div></div><div class="grid grid-cols-2 gap-2 mb-3"><div class="mock-card p-3"><div class="text-xs text-textSub mb-2">Paciente</div><div class="text-sm font-600 text-textMain">Paciente A</div><div class="text-xs text-textSub mt-1">ID: 123456</div></div><div class="mock-card p-3"><div class="text-xs text-textSub mb-2">Triagem</div><div class="text-sm font-600 text-textMain">Concluída</div><div class="text-xs text-green-600 mt-1">✓ Validada</div></div></div><div class="mock-card p-3 mb-3 border-l-4 border-blue-400"><div class="text-xs font-600 text-textMain mb-1">Motivo do encaminhamento</div><div class="text-xs text-textSub">Triagem positiva - requer atendimento clínico com supervisor</div></div><div class="flex gap-2"><div class="flex-1 h-10 rounded bg-primary text-white flex items-center justify-center text-xs font-600">Encaminhar</div><div class="flex-1 h-10 rounded bg-gray-100 text-textMain flex items-center justify-center text-xs font-600">Cancelar</div></div></div>
+      </div>
+     </div>
+    </div><div class="slide flex-col items-center justify-center h-full p-8 text-center" data-category="encerramento">
+     <div class="fade-up max-w-3xl">
+      <div class="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg"><i data-lucide="check-circle" style="width:32px;height:32px;color:white"></i>
+      </div>
+      <h2 class="text-3xl font-700 text-textMain mb-4">Conclusão</h2>
+      <p class="text-textSub mb-8">O Prontuário Eletrônico oferece uma solução completa e integrada para a gestão de prontuários psicológicos e acompanhamento acadêmico.</p>
+      <div class="grid grid-cols-3 gap-4 mb-8">
+       <div class="mock-card p-4 text-center">
+        <i data-lucide="shield" style="width:24px;height:24px;color:#6C3FA0" class="mx-auto mb-2"></i>
+        <h4 class="text-sm font-600 text-textMain">Segurança</h4>
+        <p class="text-xs text-textSub">Dados protegidos com sigilo total</p>
+       </div>
+       <div class="mock-card p-4 text-center">
+        <i data-lucide="zap" style="width:24px;height:24px;color:#6C3FA0" class="mx-auto mb-2"></i>
+        <h4 class="text-sm font-600 text-textMain">Eficiência</h4>
+        <p class="text-xs text-textSub">Processos otimizados e ágeis</p>
+       </div>
+       <div class="mock-card p-4 text-center">
+        <i data-lucide="heart" style="width:24px;height:24px;color:#6C3FA0" class="mx-auto mb-2"></i>
+        <h4 class="text-sm font-600 text-textMain">Cuidado</h4>
+        <p class="text-xs text-textSub">Focado no bem-estar do paciente</p>
+       </div>
+      </div>
+      <div class="inline-flex items-center gap-2 bg-primary text-white px-6 py-3 rounded-xl font-600"><i data-lucide="sparkles" style="width:18px;height:18px"></i> Obrigado!
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+
+    function buildDots() {
+      const container = document.getElementById('navDots');
+      container.innerHTML = '';
+      for (let i = 0; i < totalSlides; i++) {
+        const dot = document.createElement('div');
+        dot.className = `nav-dot ${i === currentSlide ? 'active' : ''}`;
+        dot.onclick = () => goToSlide(i);
+        container.appendChild(dot);
+      }
+      document.getElementById('slideCounter').textContent = `${currentSlide + 1} / ${totalSlides}`;
+    }
+
+    function goToSlide(index) {
+      slides[currentSlide].classList.remove('active');
+      currentSlide = index;
+      slides[currentSlide].classList.add('active');
+      buildDots();
+    }
+
+    function nextSlide() { goToSlide((currentSlide + 1) % totalSlides); }
+    function prevSlide() { goToSlide((currentSlide - 1 + totalSlides) % totalSlides); }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    buildDots();
+    lucide.createIcons();
+
+    // Element SDK
+    const defaultConfig = {
+      project_title: 'Prontuário Eletrônico',
+      subtitle: 'Sistema Integrado de Prontuário Psicológico e Acadêmico',
+      background_color: '#F8F6FC',
+      surface_color: '#FFFFFF',
+      text_color: '#2D1B4E',
+      primary_color: '#6C3FA0',
+      secondary_color: '#8B5CF6'
+    };
+
+    window.elementSdk.init({
+      defaultConfig,
+      onConfigChange: async (config) => {
+        document.getElementById('mainTitle').textContent = config.project_title || defaultConfig.project_title;
+        document.getElementById('mainSubtitle').textContent = config.subtitle || defaultConfig.subtitle;
+        document.body.style.background = config.background_color || defaultConfig.background_color;
+      },
+      mapToCapabilities: (config) => ({
+        recolorables: [
+          { get: () => config.background_color || defaultConfig.background_color, set: (v) => { config.background_color = v; window.elementSdk.setConfig({ background_color: v }); } },
+          { get: () => config.surface_color || defaultConfig.surface_color, set: (v) => { config.surface_color = v; window.elementSdk.setConfig({ surface_color: v }); } },
+          { get: () => config.text_color || defaultConfig.text_color, set: (v) => { config.text_color = v; window.elementSdk.setConfig({ text_color: v }); } },
+          { get: () => config.primary_color || defaultConfig.primary_color, set: (v) => { config.primary_color = v; window.elementSdk.setConfig({ primary_color: v }); } },
+          { get: () => config.secondary_color || defaultConfig.secondary_color, set: (v) => { config.secondary_color = v; window.elementSdk.setConfig({ secondary_color: v }); } }
+        ],
+        borderables: [],
+        fontEditable: undefined,
+        fontSizeable: undefined
+      }),
+      mapToEditPanelValues: (config) => new Map([
+        ['project_title', config.project_title || defaultConfig.project_title],
+        ['subtitle', config.subtitle || defaultConfig.subtitle]
+      ])
+    });
+  </script>
+ </body>
+</html>
